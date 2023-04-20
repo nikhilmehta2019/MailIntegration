@@ -85,9 +85,20 @@ export class GmailService {
         userId: 'me',
       });
 
+      console.log(mail.data.payload.headers);
+
       const subject = mail.data.payload.headers
         .find((e) => e.name.toLowerCase() === 'subject')
         .value.toLowerCase();
+
+      const emailDate = mail.data.payload.headers
+        .find((e) => e.name.toLowerCase() === 'date')
+        .value.toLowerCase();
+
+      const from = mail.data.payload.headers
+        .find((e) => e.name.toLowerCase() === 'from')
+        .value.toLowerCase();
+
       if (!subject) {
         console.log('no subject');
         //withourt subject just save so we dont scan it again
@@ -95,6 +106,8 @@ export class GmailService {
           userId: userId,
           messageId: message.id,
           isRelatable: false,
+          date: emailDate,
+          from: from,
         });
         continue;
       }
@@ -107,6 +120,9 @@ export class GmailService {
           userId: userId,
           messageId: message.id,
           isRelatable: false,
+          subject: subject,
+          date: emailDate,
+          from: from,
         });
         continue;
       }
@@ -118,6 +134,9 @@ export class GmailService {
           userId: userId,
           messageId: message.id,
           isRelatable: false,
+          subject: subject,
+          date: emailDate,
+          from: from,
         });
         continue;
       }
@@ -168,6 +187,9 @@ export class GmailService {
         userId: userId,
         messageId: message.id,
         isRelatable: true,
+        subject: subject,
+        date: emailDate,
+        from: from,
       });
     }
   }

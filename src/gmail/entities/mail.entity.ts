@@ -12,4 +12,13 @@ export class Mail {
 
   @Column()
   isRelatable: boolean;
+
+  @Column()
+  subject: string;
+
+  @Column()
+  date: string;
+
+  @Column()
+  from: string;
 }
