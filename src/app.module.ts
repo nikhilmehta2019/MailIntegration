@@ -25,7 +25,7 @@ import { GmailModule } from './gmail/gmail.module';
     }),
     GmailModule,
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [AppService],
 })
 export class AppModule {}

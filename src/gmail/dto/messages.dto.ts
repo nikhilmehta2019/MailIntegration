@@ -1,6 +1,6 @@
-import { IsString } from 'class-validator';
+import { IsInt, IsString } from 'class-validator';
 
 export class Messages {
-  @IsString()
-  userId: string;
+  @IsInt()
+  userId: number;
 }

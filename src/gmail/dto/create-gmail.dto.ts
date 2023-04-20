@@ -1,9 +1,9 @@
-import { IsString } from 'class-validator';
+import { IsInt, IsString } from 'class-validator';
 
 export class CreateGmailDto {
   @IsString()
   code: string;
 
-  @IsString()
-  userId: string;
+  @IsInt()
+  userId: number;
 }

@@ -5,8 +5,10 @@ export class Mail {
   @PrimaryColumn()
   messageId: string;
 
-  @Column()
-  userId: string;
+  @Column({
+    type: 'int',
+  })
+  userId: number;
 
   @Column()
   isRelatable: boolean;

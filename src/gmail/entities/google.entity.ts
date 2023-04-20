@@ -11,8 +11,10 @@ export class GoogleUser {
   @Column()
   refresh_token: string;
 
-  @Column()
-  userId: string;
+  @Column({
+    type: 'int',
+  })
+  userId: number;
 
   @Column()
   scope: string;

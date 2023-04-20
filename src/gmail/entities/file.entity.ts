@@ -17,6 +17,8 @@ export class File {
   @Column()
   mimeType: string;
 
-  @Column()
-  userId: string;
+  @Column({
+    type: 'int',
+  })
+  userId: number;
 }

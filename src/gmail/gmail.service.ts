@@ -41,7 +41,7 @@ export class GmailService {
     });
   }
 
-  async saveUser(code: string, userId: string) {
+  async saveUser(code: string, userId: number) {
     const client = await this.oauth2Client();
     const { tokens } = await client.getToken(code);
 
@@ -55,7 +55,7 @@ export class GmailService {
     });
   }
 
-  async getMessagesWithAttachments(userId: string) {
+  async getMessagesWithAttachments(userId: number) {
     const client = await this.oauth2Client();
     const user = (
       await this.googleUserRepository.findBy({ userId: userId })
@@ -102,7 +102,6 @@ export class GmailService {
       //check if subject is relatable with model
       const isRelatable = this.isMailRelatable(subject);
       if (!isRelatable) {
-        console.log('not relatable => ' + subject);
         //withourt subject just save so we dont scan it again
         await this.mailRepository.save({
           userId: userId,
@@ -129,18 +128,24 @@ export class GmailService {
           messageId: message.id,
           userId: 'me',
         });
+
         const originalFileName = attachment.filename;
+
+        const randomFolderPathArr = this.generateRandomNumberArray(
+          parseInt(process.env.RANDOM_FOLDER_LENGTH!),
+        );
+        const randomFileNameArr = this.generateRandomNumberArray(
+          parseInt(process.env.FILE_NAME_LENGTH!),
+        );
+
         const key =
-          this.generateRandomNumberArray(
-            parseInt(process.env.FILE_NAME_LENGTH!),
-          ).join() +
+          randomFolderPathArr.join('') +
+          randomFileNameArr.join('') +
           '.' +
           originalFileName.split('.').at(-1);
         const filePath = path.join(
           process.env.BASE_FOLDER_PATH,
-          this.generateRandomNumberArray(
-            parseInt(process.env.RANDOM_FOLDER_LENGTH!),
-          ).join('\\'),
+          randomFolderPathArr.join('\\'),
         );
 
         await this.filesService.saveBase64AsFile(
