@@ -1,8 +1,15 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Mail {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn({
+    type: 'int',
+  })
+  SeqNo: number;
+
+  @Column({
+    unique: true,
+  })
   messageId: string;
 
   @Column({
