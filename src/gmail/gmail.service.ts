@@ -55,6 +55,19 @@ export class GmailService {
     });
   }
 
+  formatDate(dateString: string) {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    return formattedDate;
+  }
+
   async getMessagesWithAttachments(userId: number) {
     const client = await this.oauth2Client();
     const user = (
@@ -91,9 +104,11 @@ export class GmailService {
         .find((e) => e.name.toLowerCase() === 'subject')
         .value.toLowerCase();
 
-      const emailDate = mail.data.payload.headers
-        .find((e) => e.name.toLowerCase() === 'date')
-        .value.toLowerCase();
+      const emailDate = this.formatDate(
+        mail.data.payload.headers
+          .find((e) => e.name.toLowerCase() === 'date')
+          .value.toLowerCase(),
+      );
 
       const from = mail.data.payload.headers
         .find((e) => e.name.toLowerCase() === 'from')
