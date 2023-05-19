@@ -182,7 +182,7 @@ export class GmailService {
           randomFolderPathArr.join('\\'),
         );
 
-        const DbFilePath = path.join(randomFolderPathArr.join('\\'), key);
+        const DbFilePath = path.join("gmailattachment" , randomFolderPathArr.join('\\'), key);
 
         await this.filesService.saveBase64AsFile(
           attachmentData.data.data,
