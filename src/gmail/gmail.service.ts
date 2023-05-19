@@ -182,6 +182,8 @@ export class GmailService {
           randomFolderPathArr.join('\\'),
         );
 
+        const DbFilePath = path.join(randomFolderPathArr.join('\\'), key);
+
         await this.filesService.saveBase64AsFile(
           attachmentData.data.data,
           filePath,
@@ -193,7 +195,7 @@ export class GmailService {
           userId: userId,
           fileName: originalFileName,
           mimeType: attachment.mimeType,
-          filePath: filePath,
+          filePath: DbFilePath,
         });
 
         uploadedFileKeys.push(key);

@@ -1,0 +1,15 @@
+{
+  "sqltools.connections": [
+    {
+      "mysqlOptions": {
+        "authProtocol": "default"
+      },
+      "previewLimit": 50,
+      "server": "localhost",
+      "driver": "MariaDB",
+      "name": "Unada Maria DB",
+      "group": "UNADA",
+      "connectString": "mariadb://clhsv49ix03kt9in1av497cqc:mXeAs8A3CS7HkeipYahNmICf@unada.in:9001/clhsv49iy03kv9in1hvtx723b"
+    }
+  ]
+}
