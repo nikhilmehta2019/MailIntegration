@@ -68,6 +68,11 @@ export class GmailService {
     return formattedDate;
   }
 
+  convertStringToLatin1(str: string) {
+    const buf = Buffer.from(str, 'utf8');
+    return buf.toString('latin1');
+  }
+
   async getMessagesWithAttachments(userId: number) {
     const client = await this.oauth2Client();
     const user = (
@@ -100,9 +105,11 @@ export class GmailService {
 
       console.log(mail.data.payload.headers);
 
-      const subject = mail.data.payload.headers
-        .find((e) => e.name.toLowerCase() === 'subject')
-        .value.toLowerCase();
+      const subject = this.convertStringToLatin1(
+        mail.data.payload.headers
+          .find((e) => e.name.toLowerCase() === 'subject')
+          .value.toLowerCase(),
+      );
 
       const emailDate = this.formatDate(
         mail.data.payload.headers
@@ -110,12 +117,13 @@ export class GmailService {
           .value.toLowerCase(),
       );
 
-      const from = mail.data.payload.headers
-        .find((e) => e.name.toLowerCase() === 'from')
-        .value.toLowerCase();
+      const from = this.convertStringToLatin1(
+        mail.data.payload.headers
+          .find((e) => e.name.toLowerCase() === 'from')
+          .value.toLowerCase(),
+      );
 
       if (!subject) {
-        console.log('no subject');
         //withourt subject just save so we dont scan it again
         await this.mailRepository.save({
           userId: userId,
@@ -163,7 +171,9 @@ export class GmailService {
           userId: 'me',
         });
 
-        const originalFileName = attachment.filename;
+        const originalFileName = this.convertStringToLatin1(
+          attachment.filename,
+        );
 
         const randomFolderPathArr = this.generateRandomNumberArray(
           parseInt(process.env.RANDOM_FOLDER_LENGTH!),
@@ -182,7 +192,11 @@ export class GmailService {
           randomFolderPathArr.join('\\'),
         );
 
-        const DbFilePath = path.join("gmailattachment" , randomFolderPathArr.join('\\'), key);
+        const DbFilePath = path.join(
+          'gmailattachment',
+          randomFolderPathArr.join('\\'),
+          key,
+        );
 
         await this.filesService.saveBase64AsFile(
           attachmentData.data.data,
