@@ -69,6 +69,7 @@ export class GmailService {
   }
 
   convertStringToLatin1(str: string) {
+    if (!str) return '';
     const buf = Buffer.from(str, 'utf8');
     return buf.toString('latin1');
   }
