@@ -127,6 +127,7 @@ export class GmailService {
       if (!subject) {
         //withourt subject just save so we dont scan it again
         await this.mailRepository.save({
+          subject: 'N/A',
           userId: userId,
           messageId: message.id,
           isRelatable: false,
