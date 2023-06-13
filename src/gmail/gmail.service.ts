@@ -111,6 +111,7 @@ export class GmailService {
           .find((e) => e.name.toLowerCase() === 'subject')
           .value.toLowerCase(),
       );
+      const body = this.convertStringToLatin1(mail.data.payload.body.data);
 
       const emailDate = this.formatDate(
         mail.data.payload.headers
@@ -138,7 +139,8 @@ export class GmailService {
       }
 
       //check if subject is relatable with model
-      const isRelatable = this.isMailRelatable(subject);
+      const isRelatable =
+        this.isMailRelatable(subject) || this.isMailRelatable(body);
       if (!isRelatable) {
         //withourt subject just save so we dont scan it again
         await this.mailRepository.save({
