@@ -1,1 +1,2 @@
-web: npm run deploy
+web: nohup npm run start:prod
+
