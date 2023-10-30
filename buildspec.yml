@@ -1,3 +1,5 @@
+version: 0.2
+
 phases:
   pre_build:
     commands:
@@ -9,11 +11,14 @@ phases:
       - echo "running the build"
       - export NODE_OPTIONS="--max-old-space-size=3072"
       - npm run build
+
   post_build:
     commands:
       - echo Build completed on `date`
       - cp appspec.yml build/
       - cp -r script/ build/
+
 artifacts:
   files:
-    - build/**/*
+    - 'build/**/*'
+
