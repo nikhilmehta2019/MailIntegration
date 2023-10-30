@@ -1,24 +1,22 @@
 version: 0.2
 
 phases:
-  pre_build:
-    commands:
-      - echo Installing source NPM dependencies...
-      - npm install -f
+  install:
+    runtime-versions:
+      nodejs: 14
 
   build:
     commands:
-      - echo "running the build"
-      - export NODE_OPTIONS="--max-old-space-size=3072"
-      - npm run build
-
-  post_build:
-    commands:
-      - echo Build completed on `date`
-      - cp appspec.yml build/
-      - cp -r script/ build/
+      - echo "Build phase - Install dependencies and build the Node.js application"
+      - npm install # Install Node.js dependencies
+      - npm run build # Build your Node.js application (replace with your actual build command)
 
 artifacts:
-  files:
-    - 'build/**/*'
+  files: # Specify the files to be included in the build artifacts
+    - '**/*'
+  base-directory: ./ # Set the base directory to the root of your application
 
+cache:
+  paths:
+    - '/root/.npm' # Cache Node.js dependencies to speed up builds
+    - '/root/.cache' # Cache other build dependencies as needed
