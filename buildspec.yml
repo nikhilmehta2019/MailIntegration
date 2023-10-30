@@ -11,11 +11,6 @@ phases:
       - npm install -f # Install Node.js dependencies
       - npm run build # Build your Node.js application (replace with your actual build command)
 
-  post_build:
-    commands:
-      - echo "Copying Procfile to build artifacts"
-      - cp -v Procfile ./ # Copy Procfile from the root directory to the build artifacts directory
-
 artifacts:
   files: # Specify the files to be included in the build artifacts
     - '**/*'
@@ -25,4 +20,3 @@ cache:
   paths:
     - '/root/.npm' # Cache Node.js dependencies to speed up builds
     - '/root/.cache' # Cache other build dependencies as needed
-
