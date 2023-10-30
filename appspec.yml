@@ -1,0 +1,10 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /usr/share/nginx/html
+hooks:
+  BeforeInstall:
+      - location: script/beforeInstall.bash
+  AfterInstall:
+      - location: script/afterInstall.bash
