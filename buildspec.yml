@@ -13,7 +13,7 @@ phases:
 
 artifacts:
   files: # Specify the files to be included in the build artifacts
-    - '**dist/*'
+    - '**/*'
   base-directory: ./ # Set the base directory to the root of your application
 
 cache:
