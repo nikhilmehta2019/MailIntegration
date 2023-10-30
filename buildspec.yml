@@ -10,6 +10,11 @@ phases:
       - echo "Build phase - Install dependencies and build the Node.js application"
       - npm install -f # Install Node.js dependencies
       - npm run build # Build your Node.js application (replace with your actual build command)
+     
+   post_build:
+    commands:
+      - echo "Copying Procfile to build artifacts"
+      - cp -v Procfile ./
 
 artifacts:
   files: # Specify the files to be included in the build artifacts
