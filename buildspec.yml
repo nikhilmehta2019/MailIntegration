@@ -9,7 +9,7 @@ phases:
     commands:
       - echo "Build phase - Install dependencies and build the Node.js application"
       - npm cache clean -f
-      - npm ci --legacy-peer-deps # Install Node.js dependencies
+      - npm install --legacy-peer-deps # Install Node.js dependencies
       - npm run build # Build your Node.js application (replace with your actual build command)
 
 artifacts:
