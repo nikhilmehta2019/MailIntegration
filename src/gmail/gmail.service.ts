@@ -22,7 +22,7 @@ export class GmailService {
     @InjectRepository(Mail)
     private mailRepository: Repository<Mail>,
     private readonly filesService: FileService,
-  ) {}
+  ) { }
   scope = ['https://www.googleapis.com/auth/gmail.readonly'];
   async oauth2Client() {
     return await new OAuth2Client(
@@ -74,6 +74,17 @@ export class GmailService {
     return buf.toString('ascii');
   }
 
+  endsWithImageOrPDFExtension(input: string): boolean {
+    const imageExtensions = [".jpg", ".jpeg", ".png"];
+    const pdfExtension = ".pdf";
+
+    const lowerCaseInput = input.toLowerCase();
+
+    return (
+      imageExtensions.some(ext => lowerCaseInput.endsWith(ext)) ||
+      lowerCaseInput.endsWith(pdfExtension)
+    );
+  }
   async getMessagesWithAttachments(userId: number) {
     const client = await this.oauth2Client();
     const user = (
@@ -169,54 +180,63 @@ export class GmailService {
       }
       const uploadedFileKeys = [];
       for (const attachment of attachments) {
-        const attachmentData = await gmail.users.messages.attachments.get({
-          id: attachment.body.attachmentId,
-          messageId: message.id,
-          userId: 'me',
-        });
+        try {
+          const attachmentData = await gmail.users.messages.attachments.get({
+            id: attachment.body.attachmentId,
+            messageId: message.id,
+            userId: 'me',
+          });
 
-        const originalFileName = this.convertStringToLatin1(
-          attachment.filename,
-        );
+          const originalFileName = this.convertStringToLatin1(
+            attachment.filename,
+          );
 
-        const randomFolderPathArr = this.generateRandomNumberArray(
-          parseInt(process.env.RANDOM_FOLDER_LENGTH!),
-        );
-        const randomFileNameArr = this.generateRandomNumberArray(
-          parseInt(process.env.FILE_NAME_LENGTH!),
-        );
+          if (!this.endsWithImageOrPDFExtension(originalFileName)) {
+            continue;
+          }
 
-        const key =
-          randomFolderPathArr.join('') +
-          randomFileNameArr.join('') +
-          '.' +
-          originalFileName.split('.').at(-1);
-        const filePath = path.join(
-          process.env.BASE_FOLDER_PATH,
-          randomFolderPathArr.join('\\'),
-        );
 
-        const DbFilePath = path.join(
-          'gmailattachment',
-          randomFolderPathArr.join('\\'),
-          key,
-        );
+          const randomFolderPathArr = this.generateRandomNumberArray(
+            parseInt(process.env.RANDOM_FOLDER_LENGTH!),
+          );
+          const randomFileNameArr = this.generateRandomNumberArray(
+            parseInt(process.env.FILE_NAME_LENGTH!),
+          );
 
-        await this.filesService.saveBase64AsFile(
-          attachmentData.data.data,
-          filePath,
-          key,
-        );
+          const key =
+            randomFolderPathArr.join('') +
+            randomFileNameArr.join('') +
+            '.' +
+            originalFileName.split('.').at(-1);
+          const filePath = path.join(
+            process.env.BASE_FOLDER_PATH,
+            randomFolderPathArr.join('\\'),
+          );
 
-        await this.FileRepository.save({
-          messageId: message.id,
-          userId: userId,
-          fileName: originalFileName,
-          mimeType: attachment.mimeType,
-          filePath: DbFilePath,
-        });
+          const DbFilePath = path.join(
+            'gmailattachment',
+            randomFolderPathArr.join('\\'),
+            key,
+          );
 
-        uploadedFileKeys.push(key);
+          await this.filesService.saveBase64AsFile(
+            attachmentData.data.data,
+            filePath,
+            key,
+          );
+
+          await this.FileRepository.save({
+            messageId: message.id,
+            userId: userId,
+            fileName: originalFileName,
+            mimeType: attachment.mimeType,
+            filePath: DbFilePath,
+          });
+
+          uploadedFileKeys.push(key);
+        } catch(err) {
+          console.error("Attachment Error" , err);
+        }
       }
       await this.mailRepository.save({
         userId: userId,
