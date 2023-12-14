@@ -28,4 +28,11 @@ export class Mail {
 
   @Column()
   from: string;
+  @Column()
+  updatedAt: string;
+
+  @Column({
+    type: 'int',
+  })
+  updatedBy: number;
 }

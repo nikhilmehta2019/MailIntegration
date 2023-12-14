@@ -27,4 +27,12 @@ export class GoogleUser {
 
   @Column()
   email: string;
+
+  @Column()
+  updatedAt: string;
+
+  @Column({
+    type: 'int',
+  })
+  updatedBy: number;
 }

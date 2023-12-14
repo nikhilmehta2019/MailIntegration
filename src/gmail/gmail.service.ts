@@ -22,7 +22,7 @@ export class GmailService {
     @InjectRepository(Mail)
     private mailRepository: Repository<Mail>,
     private readonly filesService: FileService,
-  ) { }
+  ) {}
   scope = ['https://www.googleapis.com/auth/gmail.readonly'];
   async oauth2Client() {
     return await new OAuth2Client(
@@ -41,7 +41,7 @@ export class GmailService {
     });
   }
 
-  async saveUser(code: string, userId: number , email:String) {
+  async saveUser(code: string, userId: number, email: string) {
     const client = await this.oauth2Client();
     const { tokens } = await client.getToken(code);
 
@@ -52,7 +52,9 @@ export class GmailService {
       scope: tokens.scope!,
       token_type: tokens.token_type!,
       userId: userId,
-      email:email,
+      email: email,
+      updatedAt: new Date(),
+      updatedBy: userId,
     });
   }
 
@@ -76,13 +78,13 @@ export class GmailService {
   }
 
   endsWithImageOrPDFExtension(input: string): boolean {
-    const imageExtensions = [".jpg", ".jpeg", ".png"];
-    const pdfExtension = ".pdf";
+    const imageExtensions = ['.jpg', '.jpeg', '.png'];
+    const pdfExtension = '.pdf';
 
     const lowerCaseInput = input.toLowerCase();
 
     return (
-      imageExtensions.some(ext => lowerCaseInput.endsWith(ext)) ||
+      imageExtensions.some((ext) => lowerCaseInput.endsWith(ext)) ||
       lowerCaseInput.endsWith(pdfExtension)
     );
   }
@@ -146,6 +148,8 @@ export class GmailService {
           isRelatable: false,
           date: emailDate,
           from: from,
+          updatedAt: new Date(),
+          updatedBy: userId,
         });
         continue;
       }
@@ -162,6 +166,8 @@ export class GmailService {
           subject: subject,
           date: emailDate,
           from: from,
+          updatedAt: new Date(),
+          updatedBy: userId,
         });
         continue;
       }
@@ -176,6 +182,8 @@ export class GmailService {
           subject: subject,
           date: emailDate,
           from: from,
+          updatedAt: new Date(),
+          updatedBy: userId,
         });
         continue;
       }
@@ -195,7 +203,6 @@ export class GmailService {
           if (!this.endsWithImageOrPDFExtension(originalFileName)) {
             continue;
           }
-
 
           const randomFolderPathArr = this.generateRandomNumberArray(
             parseInt(process.env.RANDOM_FOLDER_LENGTH!),
@@ -235,8 +242,8 @@ export class GmailService {
           });
 
           uploadedFileKeys.push(key);
-        } catch(err) {
-          console.error("Attachment Error" , err);
+        } catch (err) {
+          console.error('Attachment Error', err);
         }
       }
       await this.mailRepository.save({
@@ -246,6 +253,8 @@ export class GmailService {
         subject: subject,
         date: emailDate,
         from: from,
+        updatedAt: new Date(),
+        updatedBy: userId,
       });
     }
   }
