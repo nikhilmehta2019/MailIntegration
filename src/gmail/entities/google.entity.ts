@@ -24,4 +24,7 @@ export class GoogleUser {
 
   @Column()
   expiry_date: string;
+
+  @Column()
+  email: string;
 }

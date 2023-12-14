@@ -41,7 +41,7 @@ export class GmailService {
     });
   }
 
-  async saveUser(code: string, userId: number) {
+  async saveUser(code: string, userId: number , email:String) {
     const client = await this.oauth2Client();
     const { tokens } = await client.getToken(code);
 
@@ -52,6 +52,7 @@ export class GmailService {
       scope: tokens.scope!,
       token_type: tokens.token_type!,
       userId: userId,
+      email:email,
     });
   }
 
