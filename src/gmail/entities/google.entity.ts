@@ -29,7 +29,7 @@ export class GoogleUser {
   email: string;
 
   @Column()
-  updatedAt: string;
+  updatedAt: Date;
 
   @Column({
     type: 'int',

@@ -29,7 +29,7 @@ export class Mail {
   @Column()
   from: string;
   @Column()
-  updatedAt: string;
+  updatedAt: Date;
 
   @Column({
     type: 'int',
