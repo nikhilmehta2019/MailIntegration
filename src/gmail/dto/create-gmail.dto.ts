@@ -6,4 +6,8 @@ export class CreateGmailDto {
 
   @IsInt()
   userId: number;
+
+  
+  @IsString()
+  email: string;
 }

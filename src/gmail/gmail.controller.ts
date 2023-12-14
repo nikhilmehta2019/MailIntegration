@@ -17,6 +17,7 @@ export class GmailController {
     return await this.gmailService.saveUser(
       createGmailDto.code,
       createGmailDto.userId,
+      createGmailDto.email,
     );
   }
 
