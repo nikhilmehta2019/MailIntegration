@@ -27,8 +27,8 @@ export class GmailService {
   async oauth2Client() {
     return await new OAuth2Client(
       process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      'http://localhost:3000/oauth2callback',
+      process.env.GOOGLE_CLIENT_SECRET
+      // 'http://localhost:3000/oauth2callback',
     );
   }
 
@@ -45,6 +45,17 @@ export class GmailService {
     const client = await this.oauth2Client();
     const { tokens } = await client.getToken(code);
 
+    const user = await this.googleUserRepository.find({
+      where:{
+        userId: userId,
+        frzind:false
+      },
+    })
+
+    console.log(code , userId , email)
+    if(user.length){
+      return user[0];
+    }
     return await this.googleUserRepository.save({
       access_token: tokens.access_token!,
       refresh_token: tokens.refresh_token!,
@@ -91,7 +102,7 @@ export class GmailService {
   async getMessagesWithAttachments(userId: number) {
     const client = await this.oauth2Client();
     const user = (
-      await this.googleUserRepository.findBy({ userId: userId })
+      await this.googleUserRepository.findBy({ userId: userId , frzind:false })
     ).at(0);
     client.setCredentials(user as unknown as Credentials);
     const gmail = google.gmail({ version: 'v1', auth: client });
@@ -276,7 +287,7 @@ export class GmailService {
       'radiol',
     ];
     for (const keyword of keywords) {
-      if (subject.includes(keyword)) {
+      if (subject.toLowerCase().includes(keyword.toLowerCase())) {
         return true;
       }
     }

@@ -35,4 +35,9 @@ export class GoogleUser {
     type: 'int',
   })
   updatedBy: number;
+
+  @Column({
+    type: 'bool'
+  })
+  frzind: boolean
 }
