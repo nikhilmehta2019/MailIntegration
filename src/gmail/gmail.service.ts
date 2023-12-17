@@ -285,6 +285,14 @@ export class GmailService {
       'radiography',
       'radiologist',
       'radiol',
+      'path',
+      'pathology',
+      'health',
+      'healthcare',
+      'metropolis',
+      'blood',
+      'discharge summary',
+      'prescription'
     ];
     for (const keyword of keywords) {
       if (subject.toLowerCase().includes(keyword.toLowerCase())) {
