@@ -119,6 +119,7 @@ export class GmailService {
       }
       const res = await gmail.users.messages.list({
         userId: 'me',
+        labelIds: ['CATEGORY_PERSONAL'],
         ...otherQuery
       });
 
