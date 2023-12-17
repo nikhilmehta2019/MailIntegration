@@ -150,20 +150,20 @@ export class GmailService {
         const subject = this.convertStringToLatin1(
           mail.data.payload.headers
             .find((e) => e.name.toLowerCase() === 'subject')
-            .value.toLowerCase(),
+            ?.value?.toLowerCase(),
         );
-        const body = this.convertStringToLatin1(mail.data.payload.body.data);
+        const body = this.convertStringToLatin1(mail.data.payload?.body?.data);
 
         const emailDate = this.formatDate(
           mail.data.payload.headers
             .find((e) => e.name.toLowerCase() === 'date')
-            .value.toLowerCase(),
+            ?.value?.toLowerCase(),
         );
 
         const from = this.convertStringToLatin1(
           mail.data.payload.headers
             .find((e) => e.name.toLowerCase() === 'from')
-            .value.toLowerCase(),
+            ?.value?.toLowerCase(),
         );
 
         if (!subject) {
