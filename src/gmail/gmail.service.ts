@@ -102,173 +102,191 @@ export class GmailService {
   async getMessagesWithAttachments(userId: number) {
     const client = await this.oauth2Client();
     const user = (
-      await this.googleUserRepository.findBy({ userId: userId , frzind:false })
+      await this.googleUserRepository.findBy({ userId: userId, frzind: false })
     ).at(0);
     client.setCredentials(user as unknown as Credentials);
     const gmail = google.gmail({ version: 'v1', auth: client });
-    const res = await gmail.users.messages.list({
-      userId: 'me',
-    });
-    // console.log('--------> this data', res.data.messages);
-    const messages = res.data.messages;
-    console.log(messages.length);
-    for (const message of messages) {
-      //Check If Mail Already Scanned
-      const dbEmail = await this.mailRepository.findBy({
-        messageId: message.id,
-      });
-
-      if (dbEmail.length > 0) {
-        console.log('already scanned');
-        //Because All Mail After That Are Saved To DB
+    let pageToken: string | null = null
+    let scannedDocLimit = 10000;
+    do {
+      if (scannedDocLimit <= 0) {
+        console.log("10,000 message limit reached")
         break;
       }
-
-      const mail = await gmail.users.messages.get({
-        id: message.id,
+      const otherQuery = {}
+      if (pageToken) {
+        otherQuery["pageToken"] = pageToken
+      }
+      const res = await gmail.users.messages.list({
         userId: 'me',
+        ...otherQuery
       });
 
-      console.log(mail.data.payload.headers);
-
-      const subject = this.convertStringToLatin1(
-        mail.data.payload.headers
-          .find((e) => e.name.toLowerCase() === 'subject')
-          .value.toLowerCase(),
-      );
-      const body = this.convertStringToLatin1(mail.data.payload.body.data);
-
-      const emailDate = this.formatDate(
-        mail.data.payload.headers
-          .find((e) => e.name.toLowerCase() === 'date')
-          .value.toLowerCase(),
-      );
-
-      const from = this.convertStringToLatin1(
-        mail.data.payload.headers
-          .find((e) => e.name.toLowerCase() === 'from')
-          .value.toLowerCase(),
-      );
-
-      if (!subject) {
-        //withourt subject just save so we dont scan it again
-        await this.mailRepository.save({
-          subject: 'N/A',
-          userId: userId,
+      pageToken = res.data.nextPageToken;
+      const messages = res.data.messages;
+      scannedDocLimit -= messages.length;
+      for (const message of messages) {
+        //Check If Mail Already Scanned
+        const dbEmail = await this.mailRepository.findBy({
           messageId: message.id,
-          isRelatable: false,
-          date: emailDate,
-          from: from,
-          updatedAt: new Date(),
-          updatedBy: userId,
         });
-        continue;
-      }
 
-      //check if subject is relatable with model
-      const isRelatable =
-        this.isMailRelatable(subject) || this.isMailRelatable(body);
-      if (!isRelatable) {
-        //withourt subject just save so we dont scan it again
-        await this.mailRepository.save({
-          userId: userId,
-          messageId: message.id,
-          isRelatable: false,
-          subject: subject,
-          date: emailDate,
-          from: from,
-          updatedAt: new Date(),
-          updatedBy: userId,
-        });
-        continue;
-      }
-      const attachments = mail?.data?.payload?.parts?.filter((e) => e.filename);
-      if (!attachments) {
-        console.log('no attachments');
-        //withourt subject just save so we dont scan it again
-        await this.mailRepository.save({
-          userId: userId,
-          messageId: message.id,
-          isRelatable: false,
-          subject: subject,
-          date: emailDate,
-          from: from,
-          updatedAt: new Date(),
-          updatedBy: userId,
-        });
-        continue;
-      }
-      const uploadedFileKeys = [];
-      for (const attachment of attachments) {
-        try {
-          const attachmentData = await gmail.users.messages.attachments.get({
-            id: attachment.body.attachmentId,
-            messageId: message.id,
-            userId: 'me',
-          });
+        if (dbEmail.length > 0) {
 
-          const originalFileName = this.convertStringToLatin1(
-            attachment.filename,
-          );
-
-          if (!this.endsWithImageOrPDFExtension(originalFileName)) {
-            continue;
-          }
-
-          const randomFolderPathArr = this.generateRandomNumberArray(
-            parseInt(process.env.RANDOM_FOLDER_LENGTH!),
-          );
-          const randomFileNameArr = this.generateRandomNumberArray(
-            parseInt(process.env.FILE_NAME_LENGTH!),
-          );
-
-          const key =
-            randomFolderPathArr.join('') +
-            randomFileNameArr.join('') +
-            '.' +
-            originalFileName.split('.').at(-1);
-          const filePath = path.join(
-            process.env.BASE_FOLDER_PATH,
-            randomFolderPathArr.join('\\'),
-          );
-
-          const DbFilePath = path.join(
-            'gmailattachment',
-            randomFolderPathArr.join('\\'),
-            key,
-          );
-
-          await this.filesService.saveBase64AsFile(
-            attachmentData.data.data,
-            filePath,
-            key,
-          );
-
-          await this.FileRepository.save({
-            messageId: message.id,
-            userId: userId,
-            fileName: originalFileName,
-            mimeType: attachment.mimeType,
-            filePath: DbFilePath,
-          });
-
-          uploadedFileKeys.push(key);
-        } catch (err) {
-          console.error('Attachment Error', err);
+          //After this email all other emails are already scanned
+          console.log('already scanned');
+          pageToken = null;
+          //Because All Mail After That Are Saved To DB
+          break;
         }
+
+        const mail = await gmail.users.messages.get({
+          id: message.id,
+          userId: 'me',
+        });
+
+
+        const subject = this.convertStringToLatin1(
+          mail.data.payload.headers
+            .find((e) => e.name.toLowerCase() === 'subject')
+            .value.toLowerCase(),
+        );
+        const body = this.convertStringToLatin1(mail.data.payload.body.data);
+
+        const emailDate = this.formatDate(
+          mail.data.payload.headers
+            .find((e) => e.name.toLowerCase() === 'date')
+            .value.toLowerCase(),
+        );
+
+        const from = this.convertStringToLatin1(
+          mail.data.payload.headers
+            .find((e) => e.name.toLowerCase() === 'from')
+            .value.toLowerCase(),
+        );
+
+        if (!subject) {
+          //withourt subject just save so we dont scan it again
+          await this.mailRepository.save({
+            subject: 'N/A',
+            userId: userId,
+            messageId: message.id,
+            isRelatable: false,
+            date: emailDate,
+            from: from,
+            updatedAt: new Date(),
+            updatedBy: userId,
+          });
+          continue;
+        }
+
+        //check if subject is relatable with model
+        const isRelatable =
+          this.isMailRelatable(subject) || this.isMailRelatable(body);
+        if (!isRelatable) {
+          //withourt subject just save so we dont scan it again
+          await this.mailRepository.save({
+            userId: userId,
+            messageId: message.id,
+            isRelatable: false,
+            subject: subject,
+            date: emailDate,
+            from: from,
+            updatedAt: new Date(),
+            updatedBy: userId,
+          });
+          continue;
+        }
+        const attachments = mail?.data?.payload?.parts?.filter((e) => e.filename);
+        if (!attachments) {
+
+          //withourt subject just save so we dont scan it again
+          await this.mailRepository.save({
+            userId: userId,
+            messageId: message.id,
+            isRelatable: false,
+            subject: subject,
+            date: emailDate,
+            from: from,
+            updatedAt: new Date(),
+            updatedBy: userId,
+          });
+          continue;
+        }
+        const uploadedFileKeys = [];
+        for (const attachment of attachments) {
+          try {
+            const attachmentData = await gmail.users.messages.attachments.get({
+              id: attachment.body.attachmentId,
+              messageId: message.id,
+              userId: 'me',
+            });
+
+            const originalFileName = this.convertStringToLatin1(
+              attachment.filename,
+            );
+
+            if (!this.endsWithImageOrPDFExtension(originalFileName)) {
+              continue;
+            }
+
+            const randomFolderPathArr = this.generateRandomNumberArray(
+              parseInt(process.env.RANDOM_FOLDER_LENGTH!),
+            );
+            const randomFileNameArr = this.generateRandomNumberArray(
+              parseInt(process.env.FILE_NAME_LENGTH!),
+            );
+
+            const key =
+              randomFolderPathArr.join('') +
+              randomFileNameArr.join('') +
+              '.' +
+              originalFileName.split('.').at(-1);
+            const filePath = path.join(
+              process.env.BASE_FOLDER_PATH,
+              randomFolderPathArr.join('\\'),
+            );
+
+            const DbFilePath = path.join(
+              'gmailattachment',
+              randomFolderPathArr.join('\\'),
+              key,
+            );
+
+            await this.filesService.saveBase64AsFile(
+              attachmentData.data.data,
+              filePath,
+              key,
+            );
+
+            await this.FileRepository.save({
+              messageId: message.id,
+              userId: userId,
+              fileName: originalFileName,
+              mimeType: attachment.mimeType,
+              filePath: DbFilePath,
+            });
+
+            uploadedFileKeys.push(key);
+          } catch (err) {
+            console.error('Attachment Error', err);
+          }
+        }
+        await this.mailRepository.save({
+          userId: userId,
+          messageId: message.id,
+          isRelatable: true,
+          subject: subject,
+          date: emailDate,
+          from: from,
+          updatedAt: new Date(),
+          updatedBy: userId,
+        });
       }
-      await this.mailRepository.save({
-        userId: userId,
-        messageId: message.id,
-        isRelatable: true,
-        subject: subject,
-        date: emailDate,
-        from: from,
-        updatedAt: new Date(),
-        updatedBy: userId,
-      });
-    }
+
+    } while (pageToken)
   }
+
 
   isMailRelatable(subject: string) {
     const keywords = [
