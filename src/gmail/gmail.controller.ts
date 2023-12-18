@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
 import { CreateGmailDto } from './dto/create-gmail.dto';
 import { GmailService } from './gmail.service';
 import { Messages } from './dto/messages.dto';
+import { Response } from 'express';
 
 @Controller('gmail')
 export class GmailController {
@@ -22,7 +23,11 @@ export class GmailController {
   }
 
   @Post('save-messages')
-  async getMessages(@Body() getMessageDto: Messages) {
+  async getMessages(@Body() getMessageDto: Messages, @Res() res: Response) {
+    res.status(200).json({
+      totalMessages: await this.gmailService.getQueueMessageCount(),
+    });
+
     return await this.gmailService.getMessagesWithAttachments(
       getMessageDto.userId,
     );

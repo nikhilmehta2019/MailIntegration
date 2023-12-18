@@ -1,18 +1,16 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 // import { googleUserModel, MailModel } from '../models';
 // import { ParseEmailAndMakeFiles } from '../utils/mailHelper';
-import { Credentials, OAuth2Client } from 'google-auth-library';
-import { randomUUID } from 'crypto';
-import { GoogleUser } from './entities/google.entity';
-import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { retry } from 'rxjs';
-import { FileService } from 'src/shared/file.service';
-import { Mail } from './entities/mail.entity';
+import { Credentials, OAuth2Client } from 'google-auth-library';
 import * as path from 'path';
+import { FileService } from 'src/shared/file.service';
+import { Repository } from 'typeorm';
 import { File } from './entities/file.entity';
-import { Console } from 'console';
+import { GoogleUser } from './entities/google.entity';
+import { Mail } from './entities/mail.entity';
+import queue from 'amqplib';
 @Injectable()
 export class GmailService {
   constructor(
@@ -28,10 +26,18 @@ export class GmailService {
   async oauth2Client() {
     return await new OAuth2Client(
       process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET
+      process.env.GOOGLE_CLIENT_SECRET,
       // 'http://localhost:3000/oauth2callback',
     );
   }
+
+  rabbitmqConfig = {
+    hostname: 'localhost',
+    port: 15672,
+    username: 'guest',
+    password: 'guest',
+    vhost: '/',
+  };
 
   async getLoginUrl() {
     const client = await this.oauth2Client();
@@ -43,19 +49,31 @@ export class GmailService {
   }
 
   async saveUser(code: string, userId: number, email: string) {
+    const user = await this.googleUserRepository.find({
+      where: {
+        userId: userId,
+        frzind: false,
+      },
+    });
+
     const client = await this.oauth2Client();
     const { tokens } = await client.getToken(code);
 
-    const user = await this.googleUserRepository.find({
-      where:{
-        userId: userId,
-        frzind:false
-      },
-    })
-
-    console.log(code , userId , email)
-    if(user.length){
-      return user[0];
+    if (user.length) {
+      //if users updates scope and we get new token
+      const updatedUser = await this.googleUserRepository.update(
+        { userId: userId, frzind: false },
+        {
+          access_token: tokens.access_token!,
+          refresh_token: tokens.refresh_token!,
+          expiry_date: String(tokens.expiry_date),
+          scope: tokens.scope!,
+          token_type: tokens.token_type!,
+          updatedAt: new Date(),
+          updatedBy: userId,
+        },
+      );
+      return updatedUser;
     }
     return await this.googleUserRepository.save({
       access_token: tokens.access_token!,
@@ -107,27 +125,27 @@ export class GmailService {
     ).at(0);
     client.setCredentials(user as unknown as Credentials);
     const gmail = google.gmail({ version: 'v1', auth: client });
-    let pageToken: string | null = null
+    let pageToken: string | null = null;
     let scannedDocLimit = 5000;
     do {
       if (scannedDocLimit <= 0) {
-        console.log("5,000 message limit reached")
+        console.log('5,000 message limit reached');
         break;
       }
-      const otherQuery = {}
+      const otherQuery = {};
       if (pageToken) {
-        otherQuery["pageToken"] = pageToken
+        otherQuery['pageToken'] = pageToken;
       }
       const res = await gmail.users.messages.list({
         userId: 'me',
         labelIds: ['CATEGORY_PERSONAL'],
-        ...otherQuery
+        ...otherQuery,
       });
 
       pageToken = res.data.nextPageToken;
       const messages = res.data.messages;
-      console.log(res.data)
-      scannedDocLimit -= messages?.length??scannedDocLimit;
+      console.log(res.data);
+      scannedDocLimit -= messages?.length ?? scannedDocLimit;
       for (const message of messages) {
         //Check If Mail Already Scanned
         const dbEmail = await this.mailRepository.findBy({
@@ -135,7 +153,6 @@ export class GmailService {
         });
 
         if (dbEmail.length > 0) {
-
           //After this email all other emails are already scanned
           console.log('already scanned');
           pageToken = null;
@@ -147,7 +164,6 @@ export class GmailService {
           id: message.id,
           userId: 'me',
         });
-
 
         const subject = this.convertStringToLatin1(
           mail.data.payload.headers
@@ -200,9 +216,10 @@ export class GmailService {
           });
           continue;
         }
-        const attachments = mail?.data?.payload?.parts?.filter((e) => e.filename);
+        const attachments = mail?.data?.payload?.parts?.filter(
+          (e) => e.filename,
+        );
         if (!attachments) {
-
           //withourt subject just save so we dont scan it again
           await this.mailRepository.save({
             userId: userId,
@@ -286,12 +303,14 @@ export class GmailService {
           updatedBy: userId,
         });
       }
-
-    } while (pageToken)
+    } while (pageToken);
   }
 
-
   isMailRelatable(subject: string) {
+    if (!['report', 'test'].includes(subject.toLowerCase())) {
+      return false;
+    }
+
     const keywords = [
       'medical',
       'x-ray',
@@ -312,14 +331,14 @@ export class GmailService {
       'discharge summary',
       'prescription',
       'diagnostic',
-      'doctor', 
+      'doctor',
       'hospital',
       'clinic',
       'thyrocare',
-      'lal path lab', 
+      'lal path lab',
       'diagnostic',
       'nidaan',
-      'nivaran'
+      'nivaran',
     ];
     for (const keyword of keywords) {
       if (subject.toLowerCase().includes(keyword.toLowerCase())) {
@@ -336,74 +355,45 @@ export class GmailService {
     }
     return arr;
   }
+
+  async getFitData(userId: number) {
+    const client = await this.oauth2Client();
+    const user = (
+      await this.googleUserRepository.findBy({ userId: userId, frzind: false })
+    ).at(0);
+    client.setCredentials(user as unknown as Credentials);
+    const fitness = google.fitness({
+      version: 'v1',
+      auth: client,
+    });
+
+    const data = await fitness.users.sessions.list({
+      userId: 'me',
+    });
+
+    return { sessionData: data.data.session };
+  }
+
+  async getQueueMessageCount() {
+    const queueName = 'MailParserReportQueue';
+
+    try {
+      const connection = await queue.connect({
+        protocol: 'amqp',
+        hostname: this.rabbitmqConfig.hostname,
+        port: this.rabbitmqConfig.port,
+        username: this.rabbitmqConfig.username,
+        password: this.rabbitmqConfig.password,
+        vhost: this.rabbitmqConfig.vhost,
+      });
+
+      const channel = await connection.createChannel();
+      const queueInfo = await channel.checkQueue(queueName);
+
+      await connection.close();
+      return queueInfo.messageCount;
+    } catch (error) {
+      console.error('Error:', error.message);
+    }
+  }
 }
-
-// const {OAuth2Client} = require('google-auth-library');
-
-// export class GmailService {
-//   static scope = ['https://www.googleapis.com/auth/gmail.readonly'];
-
-//   static async getOAuthClient() {
-//     return new OAuth2Client(
-//       process.env.GOOGLE_CLIENT_ID,
-//       process.env.GOOGLE_CLIENT_SECRET,
-//       'http://localhost:3000/oauth2callback',
-//     );
-//   }
-//   static async getLoginUrl() {
-//     const client = await this.getOAuthClient();
-//     return client.generateAuthUrl({
-//       access_type: 'offline',
-//       prompt: 'consent',
-//       scope: this.scope,
-//     });
-//   }
-
-//   static async saveGmailUser(userId, code) {
-//     const client = await this.getOAuthClient();
-//     const r = await client.getToken(code);
-//     console.log(r.tokens);
-//     try {
-//       await googleUserModel.create({
-//         userId,
-//         ...r.tokens,
-//       });
-//     } catch {
-//       return false;
-//     }
-//   }
-
-//   static async saveLatestMails(userId) {
-//     const user = await googleUserModel.findOne({userId});
-//     const client = await this.getOAuthClient();
-//     client.setCredentials(user);
-//     const gmail = google.gmail({version: 'v1', auth: client});
-//     const res = await gmail.users.messages.list({
-//       userId: 'me',
-//     });
-//     //get mail that is not in db
-//     const messages = res.data.messages;
-//     for (const message of messages) {
-//       const mail = await MailModel.findOne({
-//         messageId: message.id,
-//       });
-//       if (!mail) {
-//         const mailData = await gmail.users.messages.get({
-//           userId: 'me',
-//           id: message.id,
-//         });
-
-//         await ParseEmailAndMakeFiles(mailData.data, client, user._id);
-//         await MailModel.create({
-//           tenantId: user._id,
-//           messageId: message.id,
-//           ...mailData.data,
-//         });
-//       } else {
-//         break;
-//       }
-//     }
-
-//     // return res.data;
-//   }
-// }
