@@ -12,6 +12,7 @@ import { FileService } from 'src/shared/file.service';
 import { Mail } from './entities/mail.entity';
 import * as path from 'path';
 import { File } from './entities/file.entity';
+import { Console } from 'console';
 @Injectable()
 export class GmailService {
   constructor(
@@ -107,10 +108,10 @@ export class GmailService {
     client.setCredentials(user as unknown as Credentials);
     const gmail = google.gmail({ version: 'v1', auth: client });
     let pageToken: string | null = null
-    let scannedDocLimit = 10000;
+    let scannedDocLimit = 5000;
     do {
       if (scannedDocLimit <= 0) {
-        console.log("10,000 message limit reached")
+        console.log("5,000 message limit reached")
         break;
       }
       const otherQuery = {}
@@ -125,7 +126,8 @@ export class GmailService {
 
       pageToken = res.data.nextPageToken;
       const messages = res.data.messages;
-      scannedDocLimit -= messages.length;
+      console.log(res.data)
+      scannedDocLimit -= messages?.length??scannedDocLimit;
       for (const message of messages) {
         //Check If Mail Already Scanned
         const dbEmail = await this.mailRepository.findBy({
@@ -152,7 +154,7 @@ export class GmailService {
             .find((e) => e.name.toLowerCase() === 'subject')
             ?.value?.toLowerCase(),
         );
-        const body = this.convertStringToLatin1(mail.data.payload?.body?.data);
+        const body = this.convertStringToLatin1(mail.data.payload.body.data);
 
         const emailDate = this.formatDate(
           mail.data.payload.headers
@@ -292,9 +294,6 @@ export class GmailService {
   isMailRelatable(subject: string) {
     const keywords = [
       'medical',
-      'report',
-      'lab',
-      'test',
       'x-ray',
       'xray',
       'scan',
@@ -311,7 +310,16 @@ export class GmailService {
       'metropolis',
       'blood',
       'discharge summary',
-      'prescription'
+      'prescription',
+      'diagnostic',
+      'doctor', 
+      'hospital',
+      'clinic',
+      'thyrocare',
+      'lal path lab', 
+      'diagnostic',
+      'nidaan',
+      'nivaran'
     ];
     for (const keyword of keywords) {
       if (subject.toLowerCase().includes(keyword.toLowerCase())) {
