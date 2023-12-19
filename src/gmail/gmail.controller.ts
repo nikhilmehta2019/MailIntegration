@@ -32,4 +32,9 @@ export class GmailController {
       getMessageDto.userId,
     );
   }
+
+  @Post('fit')
+  async getFitData(@Body() getMessageDto: Messages) {
+    return await this.gmailService.getFitData(getMessageDto.userId);
+  }
 }
