@@ -67,7 +67,7 @@ export class GmailService {
           access_token: tokens.access_token!,
           refresh_token: tokens.refresh_token!,
           expiry_date: String(tokens.expiry_date),
-          scope: tokens.scope!,
+          scope: '',
           token_type: tokens.token_type!,
           updatedAt: new Date(),
           updatedBy: userId,
@@ -79,7 +79,7 @@ export class GmailService {
       access_token: tokens.access_token!,
       refresh_token: tokens.refresh_token!,
       expiry_date: String(tokens.expiry_date),
-      scope: tokens.scope!,
+      scope: '',
       token_type: tokens.token_type!,
       userId: userId,
       email: email,
@@ -126,10 +126,10 @@ export class GmailService {
     client.setCredentials(user as unknown as Credentials);
     const gmail = google.gmail({ version: 'v1', auth: client });
     let pageToken: string | null = null;
-    let scannedDocLimit = 5000;
+    let scannedDocLimit = 10000;
     do {
       if (scannedDocLimit <= 0) {
-        console.log('5,000 message limit reached');
+        console.log('10,000 message limit reached');
         break;
       }
       const otherQuery = {};
@@ -307,11 +307,15 @@ export class GmailService {
   }
 
   isMailRelatable(subject: string) {
-    if (!['report', 'test'].includes(subject.toLowerCase())) {
-      return false;
-    }
+    // if(["report" , "test" , "lab"].find(e => subject.toLowerCase().includes(e)))
+    // {
+    //   return true;
+    // }
 
     const keywords = [
+      // 'report',
+      // 'test',
+      // 'lab',
       'medical',
       'x-ray',
       'xray',
@@ -367,11 +371,24 @@ export class GmailService {
       auth: client,
     });
 
-    const data = await fitness.users.sessions.list({
+    
+    const data = await fitness.users.dataSources.list({
       userId: 'me',
     });
+    const finalData = data.data.dataSource.map(async (e) => {
+      // unix number of 1 day before
+      const endDate = Math.floor(new Date().getTime() / 1000);
+      const startDate = endDate - 86400000;
+      console.log(e)
+      const userSourceData = await fitness.users.dataSources.datasets.get({
+        dataSourceId: e.dataStreamId!,
+        userId: 'me',
+        datasetId: `${startDate}-${endDate}`,
+      });
+      return userSourceData.data;
+    });
 
-    return { sessionData: data.data.session };
+    return { sessionData: await Promise.all(finalData) };
   }
 
   async getQueueMessageCount() {
