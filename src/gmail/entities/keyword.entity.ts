@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity()
+@Entity('emailkeywords')
 export class EmailKeywords {
   @PrimaryGeneratedColumn()
   SeqNo: number;
