@@ -37,7 +37,7 @@ export class GoogleUser {
   updatedBy: number;
 
   @Column({
-    type: 'bool'
+    type: 'bool',
   })
-  frzind: boolean
+  frzind: boolean;
 }

@@ -11,6 +11,7 @@ import { File } from './entities/file.entity';
 import { GoogleUser } from './entities/google.entity';
 import { Mail } from './entities/mail.entity';
 import queue from 'amqplib';
+import { EmailKeywords } from './entities/keyword.entity';
 @Injectable()
 export class GmailService {
   constructor(
@@ -20,6 +21,8 @@ export class GmailService {
     private FileRepository: Repository<File>,
     @InjectRepository(Mail)
     private mailRepository: Repository<Mail>,
+    @InjectRepository(EmailKeywords)
+    private emailKeywordRepo: Repository<EmailKeywords>,
     private readonly filesService: FileService,
   ) {}
   scope = ['https://www.googleapis.com/auth/gmail.readonly'];
@@ -201,7 +204,8 @@ export class GmailService {
 
         //check if subject is relatable with model
         const isRelatable =
-          this.isMailRelatable(subject) || this.isMailRelatable(body);
+          (await this.mailRelatable(subject)) ||
+          (await this.mailRelatable(body));
         if (!isRelatable) {
           //withourt subject just save so we dont scan it again
           await this.mailRepository.save({
@@ -352,6 +356,16 @@ export class GmailService {
     return false;
   }
 
+  async mailRelatable(text: string) {
+    const keywords = await this.emailKeywordRepo.find({});
+    const allKeywords = keywords.map((e) => e.Keyword.toLowerCase());
+    for (const keyword of allKeywords) {
+      if (text.toLowerCase().includes(keyword.toLowerCase())) {
+        return true;
+      }
+    }
+    return false;
+  }
   generateRandomNumberArray(length: number) {
     const arr: number[] = [];
     for (let i = 0; i < length; i++) {
@@ -371,7 +385,6 @@ export class GmailService {
       auth: client,
     });
 
-    
     const data = await fitness.users.dataSources.list({
       userId: 'me',
     });
@@ -379,7 +392,7 @@ export class GmailService {
       // unix number of 1 day before
       const endDate = Math.floor(new Date().getTime() / 1000);
       const startDate = endDate - 86400000;
-      console.log(e)
+      console.log(e);
       const userSourceData = await fitness.users.dataSources.datasets.get({
         dataSourceId: e.dataStreamId!,
         userId: 'me',
