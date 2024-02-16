@@ -153,6 +153,7 @@ export class GmailService {
         //Check If Mail Already Scanned
         const dbEmail = await this.mailRepository.findBy({
           messageId: message.id,
+          userId:userId
         });
 
         if (dbEmail.length > 0) {
