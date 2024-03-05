@@ -132,8 +132,8 @@ export class GmailService {
     let scannedDocLimit = 10000;
     do {
       if (scannedDocLimit <= 0) {
-        console.log('10,000 message limit reached');
-        break;
+        // console.log('10,000 message limit reached');
+        // break;
       }
       const otherQuery = {};
       if (pageToken) {
@@ -141,7 +141,8 @@ export class GmailService {
       }
       const res = await gmail.users.messages.list({
         userId: 'me',
-        labelIds: ['CATEGORY_PERSONAL'],
+        includeSpamTrash: false,
+        // labelIds: ['CATEGORY_PERSONAL'],
         ...otherQuery,
       });
 
@@ -153,7 +154,7 @@ export class GmailService {
         //Check If Mail Already Scanned
         const dbEmail = await this.mailRepository.findBy({
           messageId: message.id,
-          userId:userId
+          userId: userId,
         });
 
         if (dbEmail.length > 0) {
@@ -187,6 +188,7 @@ export class GmailService {
             .find((e) => e.name.toLowerCase() === 'from')
             ?.value?.toLowerCase(),
         );
+        // mail.data.payload.
 
         if (!subject) {
           //withourt subject just save so we dont scan it again
@@ -207,7 +209,14 @@ export class GmailService {
         const isRelatable =
           (await this.mailRelatable(subject)) ||
           (await this.mailRelatable(body));
-        if (!isRelatable) {
+
+        const hasSocialLable =
+          mail.data.labelIds?.includes('CATEGORY_PROMOTIONS') ||
+          mail.data.labelIds?.includes('CATEGORY_SOCIAL') ||
+          mail.data.labelIds?.includes('SENT') ||
+          mail.data.labelIds?.includes('DRAFT');
+
+        if (!isRelatable || hasSocialLable) {
           //withourt subject just save so we dont scan it again
           await this.mailRepository.save({
             userId: userId,
