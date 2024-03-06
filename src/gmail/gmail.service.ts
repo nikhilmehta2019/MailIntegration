@@ -190,20 +190,7 @@ export class GmailService {
         );
         // mail.data.payload.
 
-        if (!subject) {
-          //withourt subject just save so we dont scan it again
-          await this.mailRepository.save({
-            subject: 'N/A',
-            userId: userId,
-            messageId: message.id,
-            isRelatable: false,
-            date: emailDate,
-            from: from,
-            updatedAt: new Date(),
-            updatedBy: userId,
-          });
-          continue;
-        }
+       
 
         //check if subject is relatable with model
         const isRelatable =
