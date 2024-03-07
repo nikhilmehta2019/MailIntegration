@@ -129,11 +129,11 @@ export class GmailService {
     client.setCredentials(user as unknown as Credentials);
     const gmail = google.gmail({ version: 'v1', auth: client });
     let pageToken: string | null = null;
-    let scannedDocLimit = 10000;
+    let scannedDocLimit = 20000;
     do {
       if (scannedDocLimit <= 0) {
-        // console.log('10,000 message limit reached');
-        // break;
+        console.log('20,000 message limit reached');
+        break;
       }
       const otherQuery = {};
       if (pageToken) {
