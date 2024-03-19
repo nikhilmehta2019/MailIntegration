@@ -30,7 +30,7 @@ export class GmailService {
     return await new OAuth2Client(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      // 'http://localhost:3000/oauth2callback',
+     // 'https://developers.google.com/oauthplayground',
     );
   }
 
@@ -221,6 +221,7 @@ export class GmailService {
             from: from,
             updatedAt: new Date(),
             updatedBy: userId,
+
           });
           continue;
         }

@@ -8,7 +8,7 @@ export class Mail {
   SeqNo: number;
 
   @Column({
-    unique: true,
+   
   })
   messageId: string;
 
