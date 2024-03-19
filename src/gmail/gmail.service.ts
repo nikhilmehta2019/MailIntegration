@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { google } from 'googleapis';
+import { gmail_v1, google } from 'googleapis';
 // import { googleUserModel, MailModel } from '../models';
 // import { ParseEmailAndMakeFiles } from '../utils/mailHelper';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -175,7 +175,16 @@ export class GmailService {
             .find((e) => e.name.toLowerCase() === 'subject')
             ?.value?.toLowerCase(),
         );
-        const body = this.convertStringToLatin1(mail.data.payload.body.data);
+        let body = this.convertStringToLatin1(mail.data.payload.body.data);
+        const isZeroSize = mail.data.payload.body.size === 0;
+
+        if (isZeroSize) {
+          // Recursively call parts and get data from it'
+          const parts = mail.data.payload.parts;
+          const html_str = await this.recursive_part_finder(parts);
+
+          body = html_str.replace(/<[^>]*>/g, ' ');
+        }
         
         const emailDate = this.formatDate(
           mail.data.payload.headers
@@ -189,8 +198,6 @@ export class GmailService {
             ?.value?.toLowerCase(),
         );
         // mail.data.payload.
-
-       
 
         //check if subject is relatable with model
         const isRelatable =
@@ -422,5 +429,24 @@ export class GmailService {
     } catch (error) {
       console.error('Error:', error.message);
     }
+  }
+
+  async recursive_part_finder(parts: gmail_v1.Schema$MessagePart[]) {
+    let html_str = '';
+
+    for (const part of parts) {
+      if (part.mimeType !== 'text/html') {
+        if (part.parts?.length > 0) {
+          for (const subpart of part.parts) {
+            html_str += await this.recursive_part_finder([subpart]);
+          }
+        }
+      } else {
+        html_str += this.convertStringToLatin1(
+          Buffer.from(part.body.data, 'base64').toString('utf-8'),
+        );
+      }
+    }
+    return html_str;
   }
 }
