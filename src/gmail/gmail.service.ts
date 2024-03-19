@@ -129,10 +129,10 @@ export class GmailService {
     client.setCredentials(user as unknown as Credentials);
     const gmail = google.gmail({ version: 'v1', auth: client });
     let pageToken: string | null = null;
-    let scannedDocLimit = 20000;
+    let scannedDocLimit = 25000;
     do {
       if (scannedDocLimit <= 0) {
-        console.log('20,000 message limit reached');
+        console.log('25,000 message limit reached');
         break;
       }
       const otherQuery = {};
@@ -176,7 +176,7 @@ export class GmailService {
             ?.value?.toLowerCase(),
         );
         const body = this.convertStringToLatin1(mail.data.payload.body.data);
-
+        
         const emailDate = this.formatDate(
           mail.data.payload.headers
             .find((e) => e.name.toLowerCase() === 'date')
