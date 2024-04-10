@@ -31,7 +31,7 @@ export class GmailService {
     return await new OAuth2Client(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      // 'http://localhost:3000/oauth2callback',
+     // 'https://developers.google.com/oauthplayground',
     );
   }
 
@@ -130,10 +130,10 @@ export class GmailService {
     client.setCredentials(user as unknown as Credentials);
     const gmail = google.gmail({ version: 'v1', auth: client });
     let pageToken: string | null = null;
-    let scannedDocLimit = 20000;
+    let scannedDocLimit = 25000;
     do {
       if (scannedDocLimit <= 0) {
-        console.log('20,000 message limit reached');
+        console.log('25,000 message limit reached');
         break;
       }
       const otherQuery = {};
@@ -186,7 +186,7 @@ export class GmailService {
 
           body = html_str.replace(/<[^>]*>/g, ' ');
         }
-
+        
         const emailDate = this.formatDate(
           mail.data.payload.headers
             .find((e) => e.name.toLowerCase() === 'date')
@@ -226,6 +226,7 @@ export class GmailService {
             from: from,
             updatedAt: new Date(),
             updatedBy: userId,
+
           });
           continue;
         }
