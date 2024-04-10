@@ -31,7 +31,7 @@ export class GmailService {
     return await new OAuth2Client(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-     // 'https://developers.google.com/oauthplayground',
+      // 'https://developers.google.com/oauthplayground',
     );
   }
 
@@ -186,7 +186,7 @@ export class GmailService {
 
           body = html_str.replace(/<[^>]*>/g, ' ');
         }
-        
+
         const emailDate = this.formatDate(
           mail.data.payload.headers
             .find((e) => e.name.toLowerCase() === 'date')
@@ -226,7 +226,6 @@ export class GmailService {
             from: from,
             updatedAt: new Date(),
             updatedBy: userId,
-
           });
           continue;
         }
@@ -321,13 +320,10 @@ export class GmailService {
   }
 
   async check_email(from: string, subject: string) {
-    const res = await axios.post(
-      'http://gmail-medibank-env.eba-z9pzfdqm.ap-south-1.elasticbeanstalk.com/predict',
-      {
-        from,
-        subject,
-      },
-    );
+    const res = await axios.post('https://gmail-api.themedibank.in/predict', {
+      from,
+      subject,
+    });
     if (res.data.prediction === 'No') {
       return false;
     }
