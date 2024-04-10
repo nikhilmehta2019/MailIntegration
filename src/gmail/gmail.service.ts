@@ -12,6 +12,7 @@ import { GoogleUser } from './entities/google.entity';
 import { Mail } from './entities/mail.entity';
 import queue from 'amqplib';
 import { EmailKeywords } from './entities/keyword.entity';
+import axios from 'axios';
 @Injectable()
 export class GmailService {
   constructor(
@@ -210,7 +211,11 @@ export class GmailService {
           mail.data.labelIds?.includes('SENT') ||
           mail.data.labelIds?.includes('DRAFT');
 
-        if (!isRelatable || hasSocialLable) {
+        if (
+          !isRelatable ||
+          hasSocialLable ||
+          !(await this.check_email(from, subject))
+        ) {
           //withourt subject just save so we dont scan it again
           await this.mailRepository.save({
             userId: userId,
@@ -312,6 +317,20 @@ export class GmailService {
         });
       }
     } while (pageToken);
+  }
+
+  async check_email(from: string, subject: string) {
+    const res = await axios.post(
+      'http://gmail-medibank-env.eba-z9pzfdqm.ap-south-1.elasticbeanstalk.com/predict',
+      {
+        from,
+        subject,
+      },
+    );
+    if (res.data.prediction === 'No') {
+      return false;
+    }
+    return true;
   }
 
   isMailRelatable(subject: string) {
