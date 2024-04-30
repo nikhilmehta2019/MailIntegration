@@ -448,8 +448,9 @@ export class GmailService {
   }
 
   async recursive_part_finder(parts: gmail_v1.Schema$MessagePart[]) {
+    
     let html_str = '';
-
+try{
     for (const part of parts) {
       if (part.mimeType !== 'text/html') {
         if (part.parts?.length > 0) {
@@ -463,6 +464,7 @@ export class GmailService {
         );
       }
     }
+  }catch{}
     return html_str;
   }
 }
