@@ -214,7 +214,7 @@ export class GmailService {
         if (
           !isRelatable ||
           hasSocialLable ||
-          !(await this.check_email(from, subject))
+          !(await this.check_email(from, subject + body))
         ) {
           //withourt subject just save so we dont scan it again
           await this.mailRepository.save({
